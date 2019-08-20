@@ -10,8 +10,8 @@ projectName=Whiterefill
 backupDir="/var/www/html/var/backups"
 
 # AWS S3 bucket names
-$db-bucket-name=whiterefill-db-backup
-$file-bucket-name=whiterefill-file-backup
+db-bucket-name=whiterefill-db-backup
+file-bucket-name=whiterefill-file-backup
 
 # The user and pass are stored in ~/.netrc on the web server
 ftp_backup_host="11.22.33.44"
