@@ -1,11 +1,17 @@
 #!/bin/bash
-#@version   0.3.0
+#@version   0.4.0
 #@author    Holger Lösken <holger.loesken@codedge.de>
+#@modified  Subrata Bauri <Twitter @SubrataBauri>
  
 # Configuration
-projectName=MyProject
-currentDir="$(pwd)"
-backupDir="$currentDir/var/backups"
+projectName=Whiterefill
+#currentDir="$(pwd)"
+#backupDir="$currentDir/var/backups"
+backupDir="/var/www/html/var/backups"
+
+# AWS S3 bucket names
+$db-bucket-name=whiterefill-db-backup
+$file-bucket-name=whiterefill-file-backup
 
 # The user and pass are stored in ~/.netrc on the web server
 ftp_backup_host="11.22.33.44"
@@ -24,12 +30,13 @@ dbName="$(xmllint --xpath 'string(//default_setup/connection/dbname)' $dbXmlPath
 usage()
 {
     echo "
-Usage:  $0 -t <database|files|basesystem> -m <1|0> -b <1|0>
+Usage:  $0 -t <database|files|basesystem> -m <1|0> -b <1|0> -s <1|0>
         -t: Backup type, either database only or files
         -m: If enabled you can skip media files (media directory) from being backuped.
             Files in includes/ and /var as well as .htaccess will always be excluded.
         -b: If enabled the backup files will be moved to an external ftp server.
             This can only be used with a .netrc file with username and password of the server.
+        -s: If enabled the backup files will be moved to s3 bucket
 " 1>&2;
     exit 1;
 }
@@ -47,7 +54,7 @@ ENDFTP
 }
 
 
-while getopts ":t:m:b:" o; do
+while getopts ":t:m:b:s:" o; do
     case "${o}" in
         t)
             t=${OPTARG}
@@ -61,6 +68,10 @@ while getopts ":t:m:b:" o; do
             b=${OPTARG}
             ((b == 1 || b == 0)) || usage
             ;;
+        s)
+            b=${OPTARG}
+            ((s == 1 || s == 0)) || usage
+            ;;
         *)
             usage
             ;;
@@ -71,6 +82,7 @@ shift $((OPTIND-1))
 backupType=$t
 skipMedia=$m
 makeFtpBackup=$b
+makeS3Backup=$s
 
 fileName=$projectName-$(date +"%Y-%m-%d")
 
@@ -141,5 +153,26 @@ if [ "$makeFtpBackup" == "1" ]; then
     fi
 
     echo "Done!"
+    echo "----------------------------------------------------"
+fi
+
+if [ "$makeS3Backup" == "1" ]; then
+    echo "Copying files to S3 bucket"
+
+    if [ "$backupType" == "database" ] || [ "$backupType" == "basesystem" ]; then
+        echo " -> $fileName.sql.gz"
+        cd $backupDir
+        aws s3 cp $fileName.sql.gz s3://$db-bucket-name
+        cd -
+    fi
+
+    if [ "$backupType" == "files" ] || [ "$backupType" == "basesystem" ]; then
+        echo " -> $fileName.tar.gz"
+        cd $backupDir
+        aws s3 cp $fileName.tar.gz s3://$file-bucket-name
+        cd -
+    fi
+
+    echo "Backup to S3 Done!"
     echo "----------------------------------------------------"
 fi
