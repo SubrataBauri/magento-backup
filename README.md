@@ -16,7 +16,7 @@ The script is based on [MagePsychos](http://www.blog.magepsycho.com/backup-magen
 - The backup folder will be created in `<Magento root>/var/backups`
 
 ## Usage
-`./magento-backup.sh -t <database|files|basesystem> -m <1|0> -b <1|0>`
+`./magento-backup.sh -t <database|files|basesystem> -m <1|0> -b <1|0> -s <1|0>`
 
 You've got three options how to run the script:
 * `-t`: type of backup
